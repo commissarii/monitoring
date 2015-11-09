@@ -1,108 +1,101 @@
-# coding=utf-8
+#coding=utf-8
 __author__ = "KomissarovAV"
-__version__ = "0.10"
+__version__ = "0.15"
+# программа разработа и протестирована при компиляторе python 3.4
 
 import datetime
+import os
 import mysql.connector
-from mysql.connector import errorcode
+from mysql.connector import MySQLConnection, errorcode
+from python_mysql_dbconfig import read_db_config
 
-# для работы со временем
-now_time = datetime.datetime.now()
+# объявление класса 'Таблица'
+class Table:
+    def __init__(self, name, id_field):
+        self.name = name
+        self.id_field = id_field
 
-# создаем новый файл
-# создание файла на дозапись
-fo = open("C:\Users\logs.txt", "a")
+# функция для возврата максимального элемента столбца
+def GetMAX(table_name, column):
+    return GetValue('MAX({})'.format(column), table_name)
 
-#для тестирования
-#fo = open("C:\Users\logs.txt", "w")
+# функция для возврата минимального элемента столбца
+def GetMin(table_name, column):
+    return GetValue('MIN({})'.format(column), table_name)
 
-# выходной файл нужен, чтобы проверить, когда в последний раз запускалась программа
-fo.write ("Последний раз программа запускалась ")
-fo.write (now_time.strftime("%d.%m.%Y %I:%M %p\n"))
+# функция для нахождение максимального/минимального элемента столбца
+def GetValue(value, table_name):
+    data = 0
+    cursor.execute('SELECT {0} FROM {1}'.format(value, table_name))
+    for i in cursor.fetchone():
+        data = i
+    return data
 
-# функция для работы в БД Monitoring
-def Mysql_code(table,column):
-    # заблокировать таблицу для чтения и записи
-    cursor.execute('Lock TABLES %s%s' % (table,' READ'))
-    cursor.execute('Lock TABLES %s%s' % (table,' WRITE'))
-    # назначение дополнительной переменной = минимальному значению столбца
-    cursor.execute('SELECT @min:=MIN( %s %s' % ( column,') FROM %s%s' % (table,';')))
-    # изменение значений столбца
-    cursor.execute('UPDATE %s%s' % (table,' SET  %s%s' % (table,'.%s%s' % ( column,' =  %s%s' % (table,'.%s%s' % (column,'-@min+1;'))))))
-    # сброс счетчика
-    cursor.execute('ALTER TABLE  %s%s' %( table,' AUTO_INCREMENT = 1;'))
-    # сохранение изменений в базе данных
-    db.commit()
-    # разблокировать таблицу для чтения и записи
+# функция по изменению значения столбца таблицы
+def ResetCounter(table_name, column):
+    fout.write(" - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -\n")
+    min = GetMin(table_name, column)
+    max = GetMAX(table_name, column)
+    if (min == None):
+        fout.write("Предупреждение: В столбце `{0}` таблицы `{1}` нет данных\n".format(column, table_name))
+        return
+    if (min == 1):
+        print(min == 1)
+        fout.write('Никаких изменений не требуется для столбца `{0}` в таблице `{1}`\n'
+                   ' Минимальное значение столбца = {2}\n Максимальное значение столбца = {3}\n'
+                   .format(column, table_name, min, max))
+        return
+    fout.write('Было произведено изменение значений столбца `{0}` в таблице `{1}`\n'
+			   ' Минимальное значение столбца было = {2}\n Максимальное значение столбца было = {3}\n'
+               .format(column, table_name, min, max))
+    cursor.execute('Lock TABLES {0} WRITE;'.format(table_name))
+    cursor.execute('UPDATE {0} SET {1} = {1} - {2} + 1'.format(table_name, column, min))
+    cursor.execute('ALTER TABLE {0} AUTO_INCREMENT = 1'.format(table_name))
+    cnx.commit()
     cursor.execute('UNLOCK TABLES;')
 
-# функция для определения переполнения столбца в БД Monitoring
-def func(table,column):
-    # нахождение минимального элемента столбца
-    cursor.execute('SELECT MIN( %s %s' % ( column,') FROM %s%s' % (table,';')))
-    for i in cursor.fetchone():
-        min = i
-    # нахождение максимального элемента столбца
-    cursor.execute('SELECT MAX( %s %s' % ( column,') FROM %s%s' % (table,';')))
-    for i in cursor.fetchone():
-        max = i
-    if (min > 1):
-        fo.write ('Было произведено изменение значений столбца %s%s' % ( column, ' в таблице %s %s' % (table, '\n')))
-        fo.write ('Минимальное значение стобцаа %s%s' % ( column, ' = %s %s' % (min, '\n')))
-        fo.write ('Максимальное значение стобцаа %s%s' % ( column, ' = %s %s' % (max, '\n')))
-        Mysql_code(table, column)
-    else:
-        fo.write ('Никаких изменений не требуется для столбца %s%s' % ( column, ' в таблице %s %s' % (table, '\n')))
-        fo.write ('Минимальное значение стобцаа %s%s' % ( column, ' = %s %s' % (min, '\n')))
-        fo.write ('Максимальное значение стобцаа %s%s' % ( column, ' = %s %s' % (max, '\n')))
+    fout.write("     -       -       -       -       -       -       -       -       -    \n"
+    ' Минимальное значение столбца стало = {0}\n Максимальное значение столбца стало = {1}\n'
+             .format(GetMin(table_name, column), GetMAX(table_name, column)))
 
 # основная программа
+now_time = datetime.datetime.now()
+db_config = read_db_config()
+
+# создание файла-отчета в рабочем каталоге программы
+fout = open(os.getcwd()+'/logs.txt', 'a')
+fout.write('Отчёт работы программы за {}\n      -       -       -       -       -       -       -       -       -    \n'
+           .format(now_time.strftime('%d.%m.%Y %I:%M %p')))
+
 try:
-    db =  mysql.connector.connect(host="128.0.0.1",
-                            #host="192.168.12.241",  # имя хаста / IP
-                            #user="monitoring",      # пользователь
-                             user="root",
-                            #passwd="monitoring",    # пароль
-                             passwd="",
-                             db="Monitoring")        # имя вашей базы данных
+    cnx = MySQLConnection(**db_config)
+    if cnx.is_connected():
+        fout.write('Подключение к базе данных прошло успешно\n')
+        cursor = cnx.cursor(buffered=True)
+        # массив таблиц и их столбцов в базе данных Monitoring
+        tables_list = [
+                        Table('CalculationTasks', 'id'),
+            #Table('EphemeridesGlonass', 'id'), Table('LoadedArchives', 'id'),
+                       #Table("LoadedRinexFiles", "id"), Table("Messages", "message_id"), Table("SatellitesStatuses", "id"),
+                       #Table("SatFiles", "id"), Table("Stations", "id"), Table("StationsReliability", "id"),Table("UEREs", "id")
+                      ]
+        for table in tables_list:
+            ResetCounter(table.name, table.id_field)
+        cursor.close()
+        cnx.disconnect()
+    else:
+        fout.write('При подключении к базе данных произошла ошибка\n')
 
-    # проверка, прошло ли подключение
-    if db.is_connected():
-        fo.write ("Подключение к базе данных прошло успешно\n")
 
-    # подготовка объекта курсор
-    cursor = db.cursor()
-
-    # массив таблиц в базе данных Monitoring
-    array = ["SatFiles","Stations"]
-    #array = ["CalculationTasks","EphemeridesGlonass","LoadedArchives","LoadedRinexFiles","Messages","SatellitesStatuses","SatFiles","Stations","StationsReliability","UEREs"]
-    for table in array:
-        # отделение данных для наглядности
-        fo.write(" - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -\n")
-        if (table == "Messages"):
-            column = "message_id"
-            func(table,column)
-        else:
-            column = "id"
-            func(table,column)
-
-    # отключение курсора
-    cursor.close()
-    # отсоединить от сервера
-    db.close()
-
-# вывод ошибки
-except mysql.connector.Error as e:
-    fo.write ("Подключение к базе данных не произошло - ПРОИЗОШЛА ОШИБКА\n")
-    # код ошибки
-    fo.write ("Error code: %s%s" % ( e.errno, '\n'))
-    # его SQLSTATE значение
-    fo.write ("SQLSTATE value: %s%s" % ( e.sqlstate, '\n'))
-    # сообщение об ошибке
-    fo.write ("Error message: %s%s" % ( e.msg, '\n'))
-
-# завершение программы
+except mysql.connector.Error as err:
+    fout.write(' - * - * - * - * - * - * - * - * - * - * - * - * - * - * - * - * - * - * -\n')
+    if err.errno == errorcode.ER_ACCESS_DENIED_ERROR:
+        fout.write('Что-то не так с вашим именем пользователя или паролем\n')
+    elif err.errno == errorcode.ER_BAD_DB_ERROR:
+        fout.write('Базы данных не существует\n')
+    else:
+        fout.write('Произошла ошибка\nError code: {0}\nError message: {1}\n'
+                   .format(err.errno, err.msg))
 finally:
-    fo.write("========================================================================\n\n")
-    # закрать текстовый файл
-    fo.close()
+    fout.write("==========================================================================\n\n")
+    fout.close()
