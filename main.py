@@ -32,9 +32,9 @@ class Table:
         cnx.commit()
         cursor.execute('UNLOCK TABLES;')
 
-        print("     -       -       -       -       -       -       -       -       -    \n"
-        ' Минимальное значение столбца стало = {0}\n Максимальное значение столбца стало = {1}'
-                 .format(Table.GetMin(self), Table.GetMAX(self)))
+        print('     -       -       -       -       -       -       -       -       -    \n'
+              ' Минимальное значение столбца стало = {0}\n Максимальное значение столбца стало = {1}'
+              .format(Table.GetMin(self), Table.GetMAX(self)))
 
     # функция для возврата максимального элемента столбца
     def GetMAX(self):
@@ -65,10 +65,10 @@ try:
     print('Подключение к базе данных прошло успешно')
     cursor = cnx.cursor(buffered=True)
     tables_list = [
-                        Table('CalculationTasks', 'id'), Table('EphemeridesGlonass', 'id'), Table('LoadedArchives', 'id'),
-                        Table("LoadedRinexFiles", "id"), Table("Messages", "message_id"), Table("SatellitesStatuses", "id"),
-                        Table("SatFiles", "id"), Table("Stations", "id"), Table("StationsReliability", "id"),Table("UEREs", "id")
-                      ]
+                   Table('CalculationTasks', 'id'), Table('EphemeridesGlonass', 'id'), Table('LoadedArchives', 'id'),
+                   Table("LoadedRinexFiles", "id"), Table("Messages", "message_id"), Table("SatellitesStatuses", "id"),
+                   Table("SatFiles", "id"), Table("Stations", "id"), Table("StationsReliability", "id"),Table("UEREs", "id")
+                  ]
     for table in tables_list:
         table.ResetCounter()
     cursor.close()
@@ -76,17 +76,7 @@ try:
 
 except mysql.connector.Error as err:
     print(' - * - * - * - * - * - * - * - * - * - * - * - * - * - * - * - * - * - * -\n'
-          'Произошла ошибка:')
-    if err.errno == errorcode.ER_DBACCESS_DENIED_ERROR:
-        print('     Что-то не так с вашим именем пользователя')
-    elif err.errno == errorcode.ER_ACCESS_DENIED_ERROR:
-        print('     Что-то не так с вашим паролем')
-    elif err.errno == errorcode.ER_BAD_DB_ERROR:
-        print('     Что-то не так с название Базы Данных')
-    elif err.errno == errorcode.CR_CONN_HOST_ERROR:
-        print('     Что-то не так с IP-адрессом Базы Данных')
-    else:
-        print(' Error code: {0}\n Error message: {1}'.format(err.errno, err.msg))
+          'Произошла ошибка:\n Error code: {0}\n Error message: {1}'.format(err.errno, err.msg))
 finally:
     print('==========================================================================\n')
     sys.stdout.close()
