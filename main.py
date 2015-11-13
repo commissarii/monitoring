@@ -7,8 +7,6 @@ import datetime, sys, os, mysql.connector
 from mysql.connector import MySQLConnection, errorcode
 from python_mysql_dbconfig import read_db_config
 
-# python main.py > outfile.txt
-
 # объявление класса 'Таблица'
 class Table:
     def __init__(self, name, id_field):
@@ -83,7 +81,6 @@ try:
         cnx.disconnect()
     else:
         print('При подключении к базе данных произошла ошибка\n')
-
 
 except mysql.connector.Error as err:
     print(' - * - * - * - * - * - * - * - * - * - * - * - * - * - * - * - * - * - * -')
