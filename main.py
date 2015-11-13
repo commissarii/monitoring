@@ -65,8 +65,8 @@ try:
     print('Подключение к базе данных прошло успешно')
     cursor = cnx.cursor(buffered=True)
     tables_list = [
-                        #Table('CalculationTasks', 'id'), Table('EphemeridesGlonass', 'id'), Table('LoadedArchives', 'id'),
-                        #Table("LoadedRinexFiles", "id"), Table("Messages", "message_id"), Table("SatellitesStatuses", "id"),
+                        Table('CalculationTasks', 'id'), Table('EphemeridesGlonass', 'id'), Table('LoadedArchives', 'id'),
+                        Table("LoadedRinexFiles", "id"), Table("Messages", "message_id"), Table("SatellitesStatuses", "id"),
                         Table("SatFiles", "id"), Table("Stations", "id"), Table("StationsReliability", "id"),Table("UEREs", "id")
                       ]
     for table in tables_list:
