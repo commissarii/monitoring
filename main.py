@@ -13,8 +13,8 @@ class Table:
     # функция по изменению значения столбца таблицы
     def ResetCounter(self):
         print(' - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -')
-        min = Table.GetMin(self)
-        max = Table.GetMAX(self)
+        min = self.GetMin()
+        max = self.GetMAX()
         if (min == None):
             print('Предупреждение: В столбце `{0}` таблицы `{1}` нет данных\n'.format(table.id_field, table.name))
             return
@@ -26,26 +26,23 @@ class Table:
         print('Было произведено изменение значений столбца `{0}` в таблице `{1}`\n'
               ' Минимальное значение столбца было = {2}\n Максимальное значение столбца было = {3}'
               .format(table.id_field, table.name, min, max))
-        cursor.execute('Lock TABLES {0} WRITE;'.format(table.name))
         cursor.execute('UPDATE {0} SET {1} = {1} - {2} + 1'.format(table.name, table.id_field, min))
         cursor.execute('ALTER TABLE {0} AUTO_INCREMENT = 1'.format(table.name))
         cnx.commit()
-        cursor.execute('UNLOCK TABLES;')
-
         print('     -       -       -       -       -       -       -       -       -    \n'
               ' Минимальное значение столбца стало = {0}\n Максимальное значение столбца стало = {1}'
-              .format(Table.GetMin(self), Table.GetMAX(self)))
-
-    # функция для возврата максимального элемента столбца
-    def GetMAX(self):
-        return Table.GetValue('MAX({})'.format(table.id_field))
+              .format(self.GetMAX(), self.GetMAX()))
 
     # функция для возврата минимального элемента столбца
     def GetMin(self):
-        return Table.GetValue('MIN({})'.format(table.id_field))
+        return self.GetValue('MIN({})'.format(table.id_field))
+
+    # функция для возврата максимального элемента столбца
+    def GetMAX(self):
+        return self.GetValue('MAX({})'.format(table.id_field))
 
     # функция для нахождение максимального/минимального элемента столбца
-    def GetValue(value):
+    def GetValue(self, value):
         data = 0
         cursor.execute('SELECT {0} FROM {1}'.format(value, table.name))
         for i in cursor.fetchone():
@@ -67,10 +64,13 @@ try:
     tables_list = [
                    Table('CalculationTasks', 'id'), Table('EphemeridesGlonass', 'id'), Table('LoadedArchives', 'id'),
                    Table("LoadedRinexFiles", "id"), Table("Messages", "message_id"), Table("SatellitesStatuses", "id"),
-                   Table("SatFiles", "id"), Table("Stations", "id"), Table("StationsReliability", "id"),Table("UEREs", "id")
+                   Table("SatFiles", "id"), Table("Stations", "id"), Table("StationsReliability", "id"), Table("UEREs", "id")
                   ]
     for table in tables_list:
+        # блокировка, вызов функции изменения и разблокировка таблицы
+        cursor.execute('Lock TABLES {0} WRITE'.format(table.name))
         table.ResetCounter()
+        cursor.execute('UNLOCK TABLES')
     cursor.close()
     cnx.disconnect()
 
