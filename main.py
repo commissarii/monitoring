@@ -31,7 +31,7 @@ class Table:
         cnx.commit()
         print('     -       -       -       -       -       -       -       -       -    \n'
               ' Минимальное значение столбца стало = {0}\n Максимальное значение столбца стало = {1}'
-              .format(self.GetMAX(), self.GetMAX()))
+              .format(self.GetMIN(), self.GetMAX()))
 
     # функция для возврата минимального элемента столбца
     def GetMin(self):
